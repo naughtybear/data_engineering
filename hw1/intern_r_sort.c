@@ -6,10 +6,12 @@ typedef enum bool{false, true}bool;
 const int max_item=100;
 int max_record=10000;
 
+//判斷參數
 typedef struct parameter{
     bool d,k,c,r,n,t,s;
 }Par;
 
+// for sort array
 typedef struct element{
     char *key;
     char **pointer;
@@ -39,7 +41,7 @@ char*** double_record(char ***array,int a,int b){
     return tmp;
 }
 
-int time_pat(const void *a,const void *b){
+int time_pat(const void *a,const void *b){ //-t cmp function
     Elem newa=*(Elem*)a;
     Elem newb=*(Elem*)b;
     int year_a=0,month_a=0,day_a=0,year_b=0,month_b=0,day_b=0;
@@ -65,7 +67,7 @@ int time_pat(const void *a,const void *b){
     return day_a-day_b;
 }
 
-int size_order_no_key(const void *a,const void *b){
+int size_order_no_key(const void *a,const void *b){ //-s 但沒 -k
     Elem newa=*(Elem*)a;
     Elem newb=*(Elem*)b;
     int size_a=0,size_b=0;
@@ -82,31 +84,27 @@ int size_order_no_key(const void *a,const void *b){
     return size_a-size_b;
 }
 
-int size_order_with_key(const void *a,const void *b){
-    //printf("aaaaaaaaaaaaaaaaaa\n");
+int size_order_with_key(const void *a,const void *b){ //-s && -k
     Elem newa=*(Elem*)a;
     Elem newb=*(Elem*)b;
-    //printf("a:%s\nb:%s", newa.key,newb.key);
     if(newa.key==NULL&&newb.key==NULL)
         return 0;
     if(newa.key==NULL&&newb.key!=NULL)
         return -1;
     if(newa.key!=NULL&&newb.key==NULL)
         return 1;
-    //printf("%d %d", strlen(newa.key),strlen(newb.key));
     return strlen(newa.key)-strlen(newb.key);
 }
 
-int norm(const void *a,const void *b){
-    //printf("aaaa\n");
+int norm(const void *a,const void *b){ //normal
     return(strcmp((*(Elem*)a).key,(*(Elem*)b).key));
 }
 
-int case_insen(const void *a,const void *b){
+int case_insen(const void *a,const void *b){ //不管大小寫
     return(strcasecmp((*(Elem*)a).key,(*(Elem*)b).key));
 }
 
-int num_com(const void *a,const void *b){
+int num_com(const void *a,const void *b){ //numerical comparison
     return(atoi((*(Elem*)a).key)-atoi((*(Elem*)b).key));
 }
 
@@ -120,7 +118,7 @@ int main(int argc, char* argv[])
     int file_count=0;
     FILE *fp_in,*fp_out;
     char ***record;
-    int cmp_index=0,record_count=0;
+    int record_count=0;
     
     //init
     par.c=par.d=par.k=par.n=par.r=false;
@@ -178,8 +176,7 @@ int main(int argc, char* argv[])
             file_count++;
         }
     }
-    //printf("%s",key);
-    //printf("%d\n%d\n%d\n%d\n%d\n",par.c,par.d,par.k,par.n,par.r);
+
     //讀檔並將data分成record
     record=create_3d_array(max_record,max_item);
     for(i=0;i<file_count;i++){
@@ -188,6 +185,7 @@ int main(int argc, char* argv[])
             printf("open failed\n");
             exit(0);
         }
+        //一個record只有一行
         if(!par.d||(rb==NULL&&rl==NULL)){
             while(fgets(buf,60000,fp_in)!=NULL){
                 if(buf[0]==' '||buf[0]=='\t'){
@@ -208,7 +206,9 @@ int main(int argc, char* argv[])
                 }
             }
         }
+        //一個record不只一行
         else{
+            //state=0表示不在record區域 state=1表示在record區域
             int state=0,item_count=0;
             while(fgets(buf,60000,fp_in)!=NULL){
                 if(strncmp(rb,buf,strlen(rb))==0&&buf[strlen(rb)]=='\n'){
@@ -248,10 +248,8 @@ int main(int argc, char* argv[])
             }
         }
     }
-    /*for(i=0;i<record_count;i++)
-        printf("%s",record[i][0]);*/
-    //printf("%d\n",record_count);
-    //record_count++;
+
+    //將record放入要sort的structure
     Elem sort_array[record_count];
     for(i=0;i<record_count;i++){
         sort_array[i].pointer=record[i];
@@ -275,10 +273,7 @@ int main(int argc, char* argv[])
             }
         }
     }
-    /*for(i=0;i<record_count;i++){
-        printf("%s\n",sort_array[i].key);
-    }*/
-    //printf("deal\n");
+
     if(par.c&&!par.n){
         qsort(sort_array,record_count,sizeof(sort_array[0]),case_insen);
     }
@@ -289,17 +284,13 @@ int main(int argc, char* argv[])
         qsort(sort_array,record_count,sizeof(sort_array[0]),size_order_no_key);
     }
     else if(par.s && par.k){
-        //printf("aas\n");
         qsort(sort_array,record_count,sizeof(sort_array[0]),size_order_with_key);
-        //printf("dad\n");
     }
     else if(par.t){
         qsort(sort_array,record_count,sizeof(sort_array[0]),time_pat);
     }
     else{
-        //printf("111\n");
         qsort(sort_array,record_count,sizeof(sort_array[0]),norm);
-        //printf("2222\n");
     }
     for(i=0;i<record_count;i++){
         record[i]=sort_array[i].pointer;
@@ -307,7 +298,9 @@ int main(int argc, char* argv[])
     fp_out=fopen("out.txt","w");
     if(par.r){
         for(i=record_count-1;i>=0;i--){
-            fprintf(fp_out,"%s",record[i][0]);
+            for(j=0;record[i][j]!=NULL;j++)
+                fprintf(fp_out,"%s",record[i][j]);
+            //fprintf(fp_out,"%s",record[i][0]);
         }
     }
     else{
@@ -316,6 +309,5 @@ int main(int argc, char* argv[])
                 fprintf(fp_out,"%s",record[i][j]);
         }
     }
-    //printf("%d\n%d\n%d",par.c,par.d,par.k); 
     return 0;
 }

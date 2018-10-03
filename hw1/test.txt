@@ -1,8 +1,52 @@
-a:1997/05/21
-a:4897/12/31
-a:1111/11/11
-a:978/5/3
-a:789/8/2
-a:321/12/18
-a:321/12/22
-a:321/2/18
+Shogun  餐廳名字(幕府將軍)
+Shogun Restaurant 幕府餐廳
+Thai 泰國菜
+Japanese 日本菜
+Devi  戴維
+Foster   福斯特
+Pasadena  帕薩迪納
+Chez Attitude    Chez Attitude
+vodka gimlet   伏特加手鐲????
+Chablis   Chablis
+margaritas   瑪格麗塔
+fettuccini Alfredo   fettuccini Alfredo
+baby-back ribs   baby-back ribs
+portabella mushroom burger   portabella mushroom burger
+broccoli noodles    broccoli noodles
+capers   刺山柑
+catfish   鯰魚
+Cuervo Gold margaritas   Cuervo Gold margaritas
+rum 蘭姆酒
+barbeque wings 燒烤翅膀
+fettuccini Alfredo fettuccini Alfredo
+lemonade 檸檬水
+coconut shrimp 椰子蝦
+onion rings 洋蔥圈
+cheese quesadilla 乳酪玉米餅
+popcorn shrimp 爆米花蝦
+roasted vegetable salad 烤蔬菜沙拉
+chicken in a wine sauce with capers 雞肉佐刺山柑葡萄酒醬
+grilled garlic shrimp 蒜味烤蝦
+garlic pizza 蒜味披薩
+goat cheese 山羊乳酪
+candied walnut salad 蜜餞核桃沙拉
+blackened catfish 煙燻鯰魚
+The cashew broccoli noodles 腰果西蘭花麵
+the cheese and veggie enchiladas 乳酪蔬菜辣玉米餡餅
+grilled shrimp with garlic sauce 烤蝦佐蒜醬
+garlic sauce 蒜味醬
+chocolate mousse cake 巧克力慕斯蛋糕
+spicy rum apple crisp 香辣蘭姆酒蘋果酥
+apple crisp 蘋果酥
+pancakes 煎餅
+waffles 華夫餅
+bacon 培根
+scrambled eggs 美式炒蛋
+fired eggs 荷包蛋
+Grand Slam breakfast 大滿貫早餐
+coconut ginger chicken with rice 椰子薑雞飯
+lemon grass 檸檬草
+macadamia cakes 澳洲堅果蛋糕
+double cheeseburger 雙層芝士漢堡
+curly fries 炸捲薯條
+Pepsi 百事可樂
