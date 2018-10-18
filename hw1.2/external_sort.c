@@ -3,9 +3,11 @@
 #include <string.h>
 #include <wchar.h>
 #include <locale.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 typedef enum bool{false, true}bool;
-const int _MAX_RECORD = 8*1024*1024;
+const int _MAX_RECORD = 4*1024*1024;
 const int _ORIGION_ARRAY_SIZE = 64;
 int outFileCnt = 0;
 
@@ -14,6 +16,11 @@ typedef struct parameter{
     char* rb,*rl,*key;
 }Par;
 Par par;
+
+typedef struct heap_ele{
+    char *element;
+    int pos;
+}heapEle;
 
 char* double_array(char *input,int *arraySize)
 {
@@ -24,16 +31,32 @@ char* double_array(char *input,int *arraySize)
     *arraySize = (*arraySize)*2;
     //printf("a\n");
     free(input);
+    input = NULL;
     //printf("b\n");
     return tmp;
 }
 
-int norm_cmp(const void* a, const void* b)
+int cmp(const void* a, const void* b)
 {
-    if(!par.k)
-        return(strcmp(*(char**)a, *(char**)b));
     char* tmpa = *(char**)a;
     char* tmpb = *(char**)b;
+    if(!par.k){
+        if(tmpa == NULL && tmpb != NULL)
+            return 1;
+        else if(tmpa != NULL && tmpb == NULL)
+            return -1;
+        else if(tmpa == NULL && tmpb == NULL)
+            return 0;
+
+        if(par.n)
+            return strcmp(tmpa,tmpb);
+        else if(par.c)
+            return(atoi(*(char**)a) - atoi(*(char**)b));
+        else if(par.s)
+            return strlen(tmpa) - strlen(tmpb);
+        else
+            return strcmp(tmpa,tmpb);
+    }
     tmpa = strstr(tmpa, par.key);
     tmpb = strstr(tmpb, par.key);
     if(tmpa == NULL && tmpb != NULL)
@@ -42,88 +65,41 @@ int norm_cmp(const void* a, const void* b)
         return 1;
     else if(tmpa == NULL && tmpb == NULL)
         return 0;
-    return strcmp(tmpa,tmpb);
-}
 
-int caseins_cmp(const void* a, const void* b)
-{
-    if(!par.k)
-        return(strcasecmp(*(char**)a, *(char**)b));
-    char* tmpa = *(char**)a;
-    char* tmpb = *(char**)b;
-    tmpa = strstr(tmpa, par.key);
-    tmpb = strstr(tmpb, par.key);
-    if(tmpa == NULL && tmpb != NULL)
-        return -1;
-    else if(tmpa != NULL && tmpb == NULL)
-        return 1;
-    else if(tmpa == NULL && tmpb == NULL)
-        return 0;
-    return strcasecmp(tmpa,tmpb);
-}
-
-int num_cmp(const void* a, const void* b)
-{
-    if(!par.k)
+    if(par.n)
+        return strcmp(tmpa,tmpb);
+    else if(par.c)
         return(atoi(*(char**)a) - atoi(*(char**)b));
-    char* tmpa = *(char**)a;
-    char* tmpb = *(char**)b;
-    tmpa = strstr(tmpa, par.key);
-    tmpb = strstr(tmpb, par.key);
-    if(tmpa == NULL && tmpb != NULL)
-        return -1;
-    else if(tmpa != NULL && tmpb == NULL)
-        return 1;
-    else if(tmpa == NULL && tmpb == NULL)
-        return 0;
-    return atoi(tmpa) - atoi(tmpb);
-}
-
-int size_cmp(const void* a, const void* b)
-{
-    if(!par.k)
-        return(strlen(*(char**)a) - strlen(*(char**)b));
-    char* tmpa = *(char**)a;
-    char* tmpb = *(char**)b;
-    tmpa = strstr(tmpa, par.key);
-    tmpb = strstr(tmpb, par.key);
-    if(tmpa == NULL && tmpb != NULL)
-        return -1;
-    else if(tmpa != NULL && tmpb == NULL)
-        return 1;
-    else if(tmpa == NULL && tmpb == NULL)
-        return 0;
-    return strlen(tmpa) - strlen(tmpb);
+    else if(par.s)
+        return strlen(tmpa) - strlen(tmpb);
+    else
+        return strcmp(tmpa,tmpb);
 }
 
 void output_file(char **record)
 {
-    //printf("ccc\n");
-    if(par.n)
-        qsort((void*)record, _MAX_RECORD, sizeof(char*), num_cmp);
-    else if(par.c)
-        qsort((void*)record, _MAX_RECORD, sizeof(char*), caseins_cmp);
-    else if(par.s)
-        qsort((void*)record, _MAX_RECORD, sizeof(char*), size_cmp);
-    else
-        qsort((void*)record, _MAX_RECORD, sizeof(char*), norm_cmp);
+
+    qsort((void*)record, _MAX_RECORD, sizeof(char*), cmp);
 
     //printf("aaaaa\n");
     int i;
     FILE *fp;
     char filename[15];
+
     snprintf(filename,15,"out%d.txt",outFileCnt);
     fp = fopen(filename, "w");
     if(!par.r){
         for(i=0; i<_MAX_RECORD; i++){
             fprintf(fp,"%s",record[i]);
             free(record[i]);
+            record[i] = NULL;
         }
     }
     else{
         for(i=_MAX_RECORD-1; i>=0; i--){
             fprintf(fp,"%s",record[i]);
             free(record[i]);
+            record[i] = NULL;
         }
     }
     //printf("bbbb\n");
@@ -146,6 +122,8 @@ int read_record_withd(FILE *fp,char **record,int recordCnt)
             char *end_pos;
             
             while(start_pos != NULL){
+                strncat(oneRecord, start_pos, strlen(par.rb));
+                arrayCurSize+=strlen(par.rb);
                 start_pos = start_pos + strlen(par.rb);
                 if(par.rl != NULL){
                     end_pos = strstr(start_pos, par.rl);
@@ -246,8 +224,10 @@ int read_record_withd(FILE *fp,char **record,int recordCnt)
                         recordCnt = 0;
                     }
 
-                    // same as line 46 to 77
+                    // same as line 148 to 172
                     while(start_pos != NULL){
+                        strncat(oneRecord, start_pos, strlen(par.rb));
+                        arrayCurSize+=strlen(par.rb);
                         start_pos = start_pos + strlen(par.rb);
                         end_pos = strstr(start_pos, par.rl);
                         if(end_pos!=NULL){
@@ -299,7 +279,7 @@ int read_record_withd(FILE *fp,char **record,int recordCnt)
             else{
                 char *start_pos;
                 char *end_pos = strstr(buf, par.rb);
-
+                
                 if(end_pos != NULL){
                     int len = end_pos - buf;
                     if(len + arrayCurSize >= arrayMaxSize){
@@ -319,8 +299,12 @@ int read_record_withd(FILE *fp,char **record,int recordCnt)
                         output_file(record);
                         recordCnt = 0;
                     }
-                    //same as 79 to 106
+                    strncat(oneRecord, end_pos, strlen(par.rb));
+                    arrayCurSize+=strlen(par.rb);
+                    //same as 185 to 218
                     while(start_pos !=NULL){
+                        strncat(oneRecord, start_pos, strlen(par.rb));
+                        arrayCurSize+=strlen(par.rb);
                         start_pos = start_pos + strlen(par.rb);
                         end_pos = strstr(start_pos, par.rb);
                         if(end_pos!=NULL){
@@ -370,6 +354,8 @@ int read_record_withd(FILE *fp,char **record,int recordCnt)
             }
         }
     }
+    record[recordCnt] = oneRecord;
+    recordCnt++;
     return recordCnt;
 }
 
@@ -405,6 +391,70 @@ int read_record_withoutd(FILE *fp,char **record,int recordCnt)
     return recordCnt;
 }
 
+int tree_cmp(heapEle *win_tree,int idx1,int idx2)
+{
+    return cmp(&(win_tree[idx1].element),&(win_tree[idx2].element));
+}
+
+void min_tree_build(heapEle *win_tree,int heapSize)
+{
+    int start = heapSize,i;
+    heapEle loser[heapSize];
+    
+    for(i = heapSize/2; i<heapSize;i++){
+        loser[i].element = win_tree[i].element;
+        loser[i].pos = win_tree[i].pos;
+    }
+    for(i = heapSize-1; i > 1;i-=2){
+        if(tree_cmp(loser, i, i-1)>0){
+            win_tree[i/2] = loser[i];
+            loser[i/2] = loser[i-1];
+        }
+        else{
+            win_tree[i/2] = loser[i-1];
+            loser[i/2] = loser[i];   
+        }
+    }
+    win_tree[0] = loser[1];
+}
+
+heapEle get_min(heapEle *win_tree, int heapSize, char ***array, int *now_line, int *real_max_line , int max_line, FILE **fp)
+{
+    heapEle returnval = win_tree[0];
+    int current = returnval.pos+(heapSize/2);
+    char buf[60000];
+    
+    if(returnval.element == NULL){
+        return returnval;
+    }
+    
+    now_line[returnval.pos]++;
+    if(now_line[returnval.pos]==(real_max_line[returnval.pos])){
+        real_max_line[returnval.pos] = now_line[returnval.pos] = 0;
+        while(real_max_line[returnval.pos]!=max_line && fgets(buf, 60000, fp[returnval.pos])!=NULL ){
+            free(array[returnval.pos][real_max_line[returnval.pos]]);
+            array[returnval.pos][real_max_line[returnval.pos]]=strdup(buf);
+            real_max_line[returnval.pos]++;
+        }
+        if(real_max_line[returnval.pos]==0){
+            array[returnval.pos][real_max_line[returnval.pos]]=NULL;
+        }
+    }
+    win_tree[current].element = array[returnval.pos][now_line[returnval.pos]];
+    win_tree[0] = win_tree[current];
+    current/2;
+    while(current){
+        if(tree_cmp(win_tree,current, 0)<0){
+            heapEle tmp;
+            tmp = win_tree[current];
+            win_tree[current] = win_tree[0];
+            win_tree[0] = tmp;
+        }
+        current/=2;
+    }
+    return returnval;
+}
+
 void exter_sort()
 {
     int i,j;
@@ -426,72 +476,39 @@ void exter_sort()
         array[i] = (char**)malloc(max_line*sizeof(char*));
         snprintf(filename,15,"out%d.txt",i);
         fp[i] = fopen(filename, "r");
-        while(fgets(buf, 60000, fp[i])!=NULL && real_max_line[i]!=max_line){
+        while(real_max_line[i]!=max_line && fgets(buf, 60000, fp[i])!=NULL){
             array[i][real_max_line[i]]=strdup(buf);
             real_max_line[i]++;
         }
     }
-    int judge = outFileCnt;
-    while(judge){
-        //printf("a\n");
-        int best_idx=-1;
-        for(i=0;i<outFileCnt;i++){
-            if(real_max_line[i]==0)
-                continue;
-            if(best_idx == -1){
-                best_idx = i;
-                continue;
-            }
-            if(!par.r){
-                if(par.n){
-                    if(num_cmp(&array[best_idx][now_line[best_idx]],&array[i][now_line[i]])>0)
-                        best_idx=i;
-                }
-                else if(par.c){
-                    if(caseins_cmp(&array[best_idx][now_line[best_idx]],&array[i][now_line[i]])>0)
-                        best_idx=i;
-                }
-                else if(par.s){
-                    if(size_cmp(&array[best_idx][now_line[best_idx]],&array[i][now_line[i]])>0)
-                        best_idx=i;
-                }
-                else{
-                    if(norm_cmp(&array[best_idx][now_line[best_idx]],&array[i][now_line[i]])>0)
-                        best_idx=i;
-                }
-            }
-            else{
-                if(par.n){
-                    if(num_cmp(&array[best_idx][now_line[best_idx]],&array[i][now_line[i]])<0)
-                        best_idx=i;
-                }
-                else if(par.c){
-                    if(caseins_cmp(&array[best_idx][now_line[best_idx]],&array[i][now_line[i]])<0)
-                        best_idx=i;
-                }
-                else if(par.s){
-                    if(size_cmp(&array[best_idx][now_line[best_idx]],&array[i][now_line[i]])<0)
-                        best_idx=i;
-                }
-                else{
-                    if(norm_cmp(&array[best_idx][now_line[best_idx]],&array[i][now_line[i]])<0)
-                        best_idx=i;
-                }
-            }
-        }
-        fprintf(fp_out,"%s",array[best_idx][now_line[best_idx]]);
-        now_line[best_idx]++;
-        if(now_line[best_idx] == real_max_line[best_idx]){
-            real_max_line[best_idx] = now_line[best_idx] = 0;
-            while(fgets(buf, 60000, fp[best_idx])!=NULL && real_max_line[best_idx]!=max_line){
-                free(array[best_idx][real_max_line[best_idx]]);
-                array[best_idx][real_max_line[best_idx]]=strdup(buf);
-                real_max_line[best_idx]++;
-            }
-            if(real_max_line[best_idx]==0)
-                judge--;
-        }
+
+    int heapSize=1;
+    while(heapSize/2-1<outFileCnt)
+        heapSize*=2;
+    heapEle win_tree[heapSize],result;
+    int start = heapSize/2;
+
+    for(i = 0;i<outFileCnt;i++){
+        heapEle tmp;
+        tmp.element = array[i][0];
+        tmp.pos = i;
+        win_tree[i+start] = tmp;
     }
+
+    for(i=start + outFileCnt-1; i<heapSize;i++){
+        heapEle tmp;
+        tmp.element = NULL;
+        tmp.pos = i-start;
+        win_tree[i] = tmp;
+    }
+
+    min_tree_build(win_tree, heapSize);
+    result = get_min(win_tree,heapSize, array, now_line, real_max_line, max_line, fp);
+    while(result.element != NULL){
+        fprintf(fp_out,"%s",result.element);
+        result = get_min(win_tree,heapSize, array, now_line, real_max_line, max_line, fp);
+    }
+    fclose(fp_out);
 }
 
 int main(int argc,char *argv[])
@@ -503,8 +520,11 @@ int main(int argc,char *argv[])
     int fileCnt = 0,recordCnt = 0;
     char **record = (char**)malloc(_MAX_RECORD*sizeof(char*));
     FILE *fp,*fp_out;
+    struct timeval start;
+    struct timeval end;
     
     //init
+    gettimeofday(&start,NULL);
     setlocale(LC_ALL, "");
     par.c=par.d=par.k=par.n=par.r=false;
     par.rb=par.rl=NULL;
@@ -579,30 +599,30 @@ int main(int argc,char *argv[])
     char filename[15];
     snprintf(filename,15,"out%d.txt",outFileCnt);
     fp_out = fopen(filename, "w"); 
-    if(par.n)
-        qsort((void*)record, recordCnt, sizeof(char*), num_cmp);
-    else if(par.c)
-        qsort((void*)record, recordCnt, sizeof(char*), caseins_cmp);
-    else if(par.s)
-        qsort((void*)record, recordCnt, sizeof(char*), size_cmp);
-    else
-        qsort((void*)record, recordCnt, sizeof(char*), norm_cmp);
+    qsort((void*)record, recordCnt, sizeof(char*), cmp);
     if(!par.r){
         for(i=0; i<recordCnt; i++){
             //printf("11\n");
             fprintf(fp_out,"%s",record[i]);
             free(record[i]);
+            record[i] = NULL; 
         }
     }
     else{
         for(i=recordCnt-1; i>=0; i--){
             fprintf(fp_out,"%s",record[i]);
             free(record[i]);
+            record[i] = NULL;
         }
     }
     fclose(fp_out);
     outFileCnt++;
+    gettimeofday(&end,NULL);
+    printf("split file time: %dmin %ds\n",(int)(end.tv_sec-start.tv_sec)/60,(int)(end.tv_sec-start.tv_sec)%60);
+    start = end;
     exter_sort();
+    gettimeofday(&end,NULL);
+    printf("external sort time: %dmin %ds\n",(int)(end.tv_sec-start.tv_sec)/60,(int)(end.tv_sec-start.tv_sec)%60);
     //printf("%s",record[7]);
     return 0;
 }
