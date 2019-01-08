@@ -17,7 +17,8 @@ let vm =new Vue({
     el: '#app',
     data: {
         array: null,
-        maxpage : null
+        maxpage : null,
+        currentpage : null
     },
 
     created() {
@@ -35,9 +36,15 @@ let vm =new Vue({
             alert(msg)
             alert(getQueryVariable('search'))
         },
-        sendmsg: function(msg){
+        sendmsg: function(){
+            if(this.currentpage<1)
+                this.currentpage=1
+            else if(this.currentpage>this.maxpage)
+                this.currentpage = this.maxpage
+            
+            alert(getQueryVariable('search'))
             axios
-            .get(url3, {params: {search: getQueryVariable('search'), ifsearch: false, page: msg-1}})
+            .get(url3, {params: {search: getQueryVariable('search'), ifsearch: false, page: this.currentpage-1}})
             .then(response => {
                 this.array = response.data
                 this.maxpage = response.data[0].maxPage   

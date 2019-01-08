@@ -44,3 +44,11 @@ body{
 .page{
     width: 30%
 }
+
+.jump{
+    text-align: center;
+}
+
+.jump input{
+    width: 3rem;
+}
